@@ -1,0 +1,207 @@
+#----------------------------------------------------------------------------------
+# ELF Header - 64 Bytes
+# Magic Number
+7f 45 4c 46
+
+# Specify 64 Bit
+02
+
+# Specify Little Endian 
+01
+
+# Specify Elf Version
+01
+
+# Specify Target ABI, in this case SYS V
+00
+
+# Specify ABI Version 
+00
+
+# 7 Bytes Padding
+00 00 00 00 00 00 00
+
+# Specify ELF Type - Executable Binary in this case | e_type
+02 00
+
+# Specify Architecture - x64 Intel | e_machine
+3e 00
+
+# Specify Elf Version - 1 | e_version
+01 00 00 00
+
+# Start Address for the Virtual Memory - 0x0000000000400078 (0x400078) | e_entry
+78 00 40 00 00 00 00 00
+
+# Program Header Offset, relative to start of the file, i.e. 64 bytes 0x40 | e_phoff
+40 00 00 00 00 00 00 00
+
+# Section Header Offset, 192 bytes - 0xc0 | e_shoff
+00 00 00 00 00 00 00 00
+
+# Architecture Flags | e_flags
+00 00 00 00
+
+# Size of The Header, 0x40 - 64 bytes | e_ehsize
+40 00
+
+# Size of the Program Header 0x38 - 56 bytes | e_phentsize
+38 00
+
+# Number of Program Headers - 1 | e_phnum
+01 00
+
+# Size of Section Header 0x40 - 64 bytes | e_shent_size
+40 00
+
+# Number of Section Headers 3 | e_shnum
+00 00
+
+# Index of the Section Header that references the string table | e_shstrndx
+00 00
+
+#----------------------------------------------------------------------------------
+# Program Header - 56 Bytes
+# Specify Loadable Segment | p_type
+01 00 00 00
+
+# Specify Segment Flags Readable and Executable | p_flags
+07 00 00 00
+
+# Program Offset within the file | p_offset
+00 00 00 00 00 00 00 00
+
+# Virtual Start Address of the Program | p_vaddr
+00 00 40 00 00 00 00 00
+
+# Physical Start Address of the Progarm (ignored in this case) | p_paddr
+00 00 40 00 00 00 00 00
+
+# Byte size of the Loaded Section in the file 0x123 291 | p_filesz
+23 01 00 00 00 00 00 00
+
+# Byte size of the Loaded Section in the memory 0x149 | p_memsz
+49 01 00 00 00 00 00 00
+
+# Section alignment boundary | p_align
+00 00 20 00 00 00 00 00
+#----------------------------------------------------------------------------------
+# start (33 bytes):
+# input:
+# xorq %rax %rax
+48 33 c0
+# xorq %rdi, %rdi
+48 33 ff
+# movq $buffer, %rsi | 400123
+48 c7 c6 23 01 40 00
+# movq $0x10, %rdx
+48 c7 c2 10 00 00 00
+# syscall
+0f 05
+
+# pushq %rax
+50
+# xorq %rax %rax
+48 33 c0
+# movq $buffer, %rcx
+48 c7 c1 23 01 40 00
+
+# convert_to_int (30 bytes):
+# movzbq (%rcx), %rdx
+48 0f b6 11
+# cmpb $0xa, %dl
+80 fa 0a
+# je done
+74 15
+# cmpb $0x0, %dl
+80 fa 00
+# je done
+74 10
+
+# imulq $0xa, %rax, %rax
+48 6b c0 0a
+# subq $0x30, %rdx
+48 83 ea 30
+# addq %rdx, %rax
+48 01 d0
+# incq %rcx
+48 ff c1
+# jmp convert_to_int
+eb e2
+
+# done (11 bytes):
+# movq %rax, %rcx
+48 89 c1
+# xorq %rax %rax
+48 33 c0
+# movl $0x1, %edi
+bf 01 00 00 00
+
+# loop (19 bytes):
+# testq %rcx, %rcx
+48 85 c9
+# je loop_done
+74 0e
+# movq %rdi, %rdx
+48 89 fa
+# addq %rax, %rdi
+48 01 c7
+# movq %rdx, %rax
+48 89 d0
+# decq %rcx
+48 ff c9
+# jmp loop
+eb ed
+
+# loop_done (23 bytes):
+# movq $out_buf + 0x15, %rcx | 400133 + 15 400148
+48 c7 c1 48 01 40 00
+# addq $0x15, %rcx (COMBINED WITH PREV)
+# movb $0xa, (%rcx)
+c6 01 0a
+# decq %rcx
+48 ff c9
+# movl $1, %rbx
+bb 01 00 00 00
+# movl $0xa, %edi
+bf 0a 00 00 00
+
+# convert_to_str (28 bytes):
+# xorq %rdx, %rdx
+48 33 d2
+# divq %rdi
+48 f7 f7
+# addl $0x30 %edx
+81 c2 30 00 00 00
+# movb %dl, (%rcx)
+88 11
+# incq %rbx
+48 ff c3
+# decq %rcx
+48 ff c9
+# testq %rax, %rax
+48 85 c0
+# jnz convert_to_str
+75 e7
+# incq %rcx
+48 ff c1
+
+# convert_comp (18 bytes):
+# movl $0x1, %edi
+bf 01 00 00 00
+# movl $0x1, %eax
+b8 01 00 00 00
+# movq %rcx, %rsi
+48 89 ce
+# movq %rbx, %rdx
+48 89 da
+# syscall
+0f 05
+
+# exit (9 bytes):
+# movl $60, %eax
+b8 3c 00 00 00
+# xorl %edi
+31 ff
+# syscall
+0f 05
